@@ -1,0 +1,67 @@
+#!/usr/bin/env node
+
+const Express = require('express');
+const program = require('commander');
+const downloader = require('../index');
+const colors = require('colors');
+
+// 处理命令行参数
+program
+  .version('1.0.0')
+  .option('-p, --port', 'listening port', parseInt)
+  .option('-h, --host', 'host address')
+  .parse(process.argv);
+
+const port = program.port || 8060;
+const host = program.host || '0.0.0.0';
+
+function getLocalIpAddress() {
+  const os = require('os');
+  const ifaces = os.networkInterfaces();
+  const ips = [];
+  Object.keys(ifaces).forEach(function (ifname) {
+
+    ifaces[ifname].forEach(function (iface) {
+      if ('IPv4' !== iface.family || iface.internal !== false) {
+        // skip over internal (i.e. 127.0.0.1) and non-ipv4 addresses
+        return;
+      }
+      ips.push(iface.address);
+    });
+  });
+  return ips;
+}
+
+const getAvaliableAdress = host => {
+  const address = [host];
+  if (!['0.0.0.0', 'localhost', '127.0.0.1'].indexOf(host)) {
+    return ['0.0.0.0', 'localhost'].concat(getLocalIpAddress());
+  }
+};
+
+const error = (err, req, res, next) => {
+  console.log('error');
+  const softTab = '&#32;&#32;&#32;&#32;';
+  const errTrace = process.env.NODE_ENV !== 'production' ?
+    `:<br><br><pre style="color:red">${softTab}${err.stack.replace(/\n/g, `<br>${softTab}`)}</pre>` : '';
+  res.status(500).send(`Server Error${errTrace}`);
+};
+
+// Initialize the Express App
+const app = new Express();
+
+app.use(downloader);
+
+app.use(error);
+
+app.listen(port, host, (error) => {
+  if (error) {
+    throw error;
+  }
+
+  console.log(colors.yellow('app is running on:'));
+  getAvaliableAdress(host).forEach(host => {
+    console.log(colors.green(`  http://${host}:${port}`));
+  });
+  console.log('Hit CTRL-C to stop the server');
+});
