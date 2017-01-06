@@ -1,6 +1,6 @@
 {
   "name": "filed-server",
-  "bin": "./path/to/program",
+  "bin": "./bin/filed-server",
   "version": "1.0.0",
   "description": "file download server",
   "engines": {
