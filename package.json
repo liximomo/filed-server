@@ -1,7 +1,7 @@
 {
   "name": "filed-server",
   "bin": "./bin/filed-server",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "file download server",
   "engines": {
     "node": ">=6.0.0"
