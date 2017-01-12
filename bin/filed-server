@@ -4,6 +4,9 @@ const Express = require('express');
 const program = require('commander');
 const downloader = require('../index');
 const colors = require('colors');
+const path = require('path');
+
+const guidePath = path.join(__dirname, '../guide.html');
 
 // 处理命令行参数
 program
@@ -40,7 +43,6 @@ const getAvaliableAdress = host => {
 };
 
 const error = (err, req, res, next) => {
-  console.log('error');
   const softTab = '&#32;&#32;&#32;&#32;';
   const errTrace = process.env.NODE_ENV !== 'production' ?
     `:<br><br><pre style="color:red">${softTab}${err.stack.replace(/\n/g, `<br>${softTab}`)}</pre>` : '';
@@ -49,6 +51,10 @@ const error = (err, req, res, next) => {
 
 // Initialize the Express App
 const app = new Express();
+
+app.use('/', (req, res, next) => {
+  res.sendFile(guidePath);
+});
 
 app.use(downloader);
 
