@@ -6,7 +6,7 @@ const filedServer = require('../index');
 const colors = require('colors');
 const path = require('path');
 
-const guidePath = path.join(__dirname, '../usage.html');
+const viewPath = path.join(__dirname, '../views');
 
 // 处理命令行参数
 program
@@ -52,7 +52,7 @@ const error = (err, req, res, next) => {
 // Initialize the Express App
 const app = new Express();
 app.set('view engine', 'pug');
-app.set('views', './views');
+app.set('views', viewPath);
 
 const filedServerMiddelWare = filedServer({
   dirProcesser: (req, res, next, dir) => {

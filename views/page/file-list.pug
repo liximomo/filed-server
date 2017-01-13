@@ -13,6 +13,10 @@ block append style
       align-items: center;
     }
 
+    .file__item--pre {
+      margin-bottom: 10px;
+    }
+    
     .action {
       color: #999;
       background: none;
@@ -38,10 +42,13 @@ block append style
 block content
   ul
     each file in dir.children
-      if file.queryPath !== '#'
+      if !file.name.startsWith('.')
         li: div.file__item
           p.file__name: a(href='/' + file.queryPath) #{file.name}
           div.actionRow
             if !file.directory
               a.action(href='/' + file.queryPath + '?format=raw') raw
             a.action(href='/' + file.queryPath + '?format=file') download
+      else if file.name === '..' && file.queryPath !== '#'
+        li: div.file__item.file__item--pre
+          p.file__name: a(href='/' + file.queryPath) #{file.name}
