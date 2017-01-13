@@ -2,11 +2,11 @@
 
 const Express = require('express');
 const program = require('commander');
-const downloader = require('../index');
+const filedServer = require('../index');
 const colors = require('colors');
 const path = require('path');
 
-const guidePath = path.join(__dirname, '../guide.html');
+const guidePath = path.join(__dirname, '../usage.html');
 
 // 处理命令行参数
 program
@@ -44,19 +44,30 @@ const getAvaliableAdress = host => {
 
 const error = (err, req, res, next) => {
   const softTab = '&#32;&#32;&#32;&#32;';
-  const errTrace = process.env.NODE_ENV !== 'production' ?
+  const errTrace = process.env.NODE_ENV === 'development' ?
     `:<br><br><pre style="color:red">${softTab}${err.stack.replace(/\n/g, `<br>${softTab}`)}</pre>` : '';
   res.status(500).send(`Server Error${errTrace}`);
 };
 
 // Initialize the Express App
 const app = new Express();
+app.set('view engine', 'pug');
+app.set('views', './views');
 
-app.use('/', (req, res, next) => {
-  res.sendFile(guidePath);
+const filedServerMiddelWare = filedServer({
+  dirProcesser: (req, res, next, dir) => {
+    dir.children.sort((l, r) => l.name.localeCompare(r.name));
+    res.render('page/file-list', { dir });
+  }
 });
 
-app.use(downloader);
+app.use('/', (req, res, next) => {
+  if (req.query.help !== undefined) {
+    res.render('page/usage');
+  } else {
+    filedServerMiddelWare(req, res, next);
+  }
+});
 
 app.use(error);
 
@@ -69,5 +80,7 @@ app.listen(port, host, (error) => {
   getAvaliableAdress(host).forEach(host => {
     console.log(colors.green(`  http://${host}:${port}`));
   });
+  console.log(colors.yellow('looking for help?:'));
+    console.log(colors.green(`  http://${host}:${port}?help`));
   console.log('Hit CTRL-C to stop the server');
 });

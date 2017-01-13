@@ -1,0 +1,47 @@
+extends ../layout.pug
+
+block append style
+  style.
+    li {
+      list-style: none;
+    }
+
+    .file__item,
+    .actionRow {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .action {
+      color: #999;
+      background: none;
+      cursor: pointer;
+      font-size: 14px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 2px 4px;
+    }
+
+    .action:hover {
+      color: black;
+      box-shadow: none;
+    }
+
+    .action:visited {
+      color: #999;
+    }
+
+    .action + .action {
+      margin-left: 10px;
+    }
+block content
+  ul
+    each file in dir.children
+      if file.queryPath !== '#'
+        li: div.file__item
+          p.file__name: a(href='/' + file.queryPath) #{file.name}
+          div.actionRow
+            if !file.directory
+              a.action(href='/' + file.queryPath + '?format=raw') raw
+            a.action(href='/' + file.queryPath + '?format=file') download

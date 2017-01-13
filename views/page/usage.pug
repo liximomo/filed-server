@@ -1,0 +1,23 @@
+extends ../layout.pug
+
+block content
+  section
+    h2 Filed Server
+    p
+      | The static file server is avaliable!
+  section
+    h2 Usage
+    p you can query file with different params to change it's function
+    section
+      h3 Url Params
+      table(style='width: 100%')
+        thead
+          tr
+            th name
+            th value
+            th description
+        tbody
+          tr
+            td format
+            td raw or file
+            td raw for raw content, file for download
