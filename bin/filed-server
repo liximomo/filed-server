@@ -38,7 +38,7 @@ function getLocalIpAddress() {
 const getAvaliableAdress = host => {
   const address = [host];
   if (!['0.0.0.0', 'localhost', '127.0.0.1'].indexOf(host)) {
-    return ['0.0.0.0', 'localhost'].concat(getLocalIpAddress());
+    return ['localhost'].concat(getLocalIpAddress());
   }
 };
 
