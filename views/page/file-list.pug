@@ -1,9 +1,22 @@
 extends ../layout.pug
 
+mixin fileItem(file, modifier)
+  li: div(class='file__item ' + modifier)
+          p.file__name(title=file.name): a(href='/' + file.queryPath) #{file.name}
+          div.actionRow
+            if !file.directory
+              a.action(href='/' + file.queryPath + '?format=raw') raw
+            a.action(href='/' + file.queryPath + '?format=file') download
+
 block append style
   style.
+    ul {
+      padding-left: 0;
+    }
+
     li {
       list-style: none;
+      margin: 1em 0;
     }
 
     .file__item,
@@ -13,10 +26,25 @@ block append style
       align-items: center;
     }
 
+    .actionRow {
+      flex: 0 0 auto;
+    }
+
+    .file__item--hidden {
+      display: none;
+    }
+
     .file__item--pre {
       margin-bottom: 10px;
     }
     
+    .file__name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-right: 20px;
+      margin-bottom: 0;
+    }
+
     .action {
       color: #999;
       background: none;
@@ -39,16 +67,17 @@ block append style
     .action + .action {
       margin-left: 10px;
     }
+    
 block content
   ul
     each file in dir.children
-      if !file.name.startsWith('.')
-        li: div.file__item
-          p.file__name: a(href='/' + file.queryPath) #{file.name}
-          div.actionRow
-            if !file.directory
-              a.action(href='/' + file.queryPath + '?format=raw') raw
-            a.action(href='/' + file.queryPath + '?format=file') download
-      else if file.name === '..' && file.queryPath !== '#'
-        li: div.file__item.file__item--pre
-          p.file__name: a(href='/' + file.queryPath) #{file.name}
+      if file.queryPath === '#'
+        // nothing
+      else if file.name.startsWith('.')
+        if file.name === '..'
+          li: div.file__item.file__item--pre
+            p.file__name(title=file.name): a(href='/' + file.queryPath) #{file.name}
+        else
+          +fileItem(file, 'file__item--hidden')
+      else
+        +fileItem(file)
