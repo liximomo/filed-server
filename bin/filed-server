@@ -44,8 +44,11 @@ const getAvaliableAdress = host => {
 
 const error = (err, req, res, next) => {
   const softTab = '&#32;&#32;&#32;&#32;';
-  const errTrace = process.env.NODE_ENV === 'development' ?
-    `:<br><br><pre style="color:red">${softTab}${err.stack.replace(/\n/g, `<br>${softTab}`)}</pre>` : '';
+  let errTrace = '';
+  if (process.env.NODE_ENV === 'development') {
+    errTrace = `:<br><br><pre style="color:red">${softTab}${err.stack.replace(/\n/g, `<br>${softTab}`)}</pre>`;
+    console.log(err);
+  }
   res.status(500).send(`Server Error${errTrace}`);
 };
 
