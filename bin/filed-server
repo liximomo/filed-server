@@ -17,6 +17,7 @@ program
 
 const port = program.port || 8060;
 const host = program.host || '0.0.0.0';
+const dir = program.args[0];
 
 function getLocalIpAddress() {
   const os = require('os');
@@ -58,6 +59,7 @@ app.set('view engine', 'pug');
 app.set('views', viewPath);
 
 const filedServerMiddelWare = filedServer({
+  dir,
   dirProcesser: (req, res, next, dir) => {
     dir.children.sort((l, r) => l.name.localeCompare(r.name));
     res.render('page/file-list', { dir });
