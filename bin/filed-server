@@ -10,7 +10,7 @@ const viewPath = path.join(__dirname, '../views');
 
 // 处理命令行参数
 program
-  .version('1.0.0')
+  .version('1.3.2')
   .option('-p, --port', 'listening port', parseInt)
   .option('-h, --host', 'host address')
   .parse(process.argv);
