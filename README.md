@@ -1,20 +1,24 @@
 # file download server
-serve your local files that can be a browser downloads.
+Serve your local files for viewing and downloading.
 
 ## Installation
 ```
   npm install --global filed-server 
+  or
+  yarn global add filed-server 
 ```
 
 ## Usage
 
 ```
-  filed-server [flags]
+  filed-server [option] [path]
 ```
 
-## Flags
+## Option
 
-| Flag      | Short Flag  | Description      |
+| Name      | Alias       | Description      |
 | ----------|:-----------:| ----------------:|
 | --port    | -p          |  port to listen  |
 | --host    | -h          |  server address  |
+
+Path defaults to current working directory.
