@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 
+const fs = require('fs');
+const path = require('path');
 const Express = require('express');
 const program = require('commander');
-const filedServer = require('../index');
+const qrcode = require('qrcode');
 const colors = require('colors');
-const path = require('path');
+const filedServer = require('../index');
 const package = require('../package.json');
 
 const viewPath = path.join(__dirname, '../views');
@@ -18,15 +20,17 @@ program
 
 const port = program.port || 8060;
 const host = program.host || '0.0.0.0';
-const dir = program.args[0];
+const fspath = program.args[0];
+
+const base = path.isAbsolute(fspath) ? fspath : path.join(process.cwd(), fspath);
+const isFileMode = !fs.statSync(base).isDirectory();
 
 function getLocalIpAddress() {
   const os = require('os');
   const ifaces = os.networkInterfaces();
   const ips = [];
-  Object.keys(ifaces).forEach(function (ifname) {
-
-    ifaces[ifname].forEach(function (iface) {
+  Object.keys(ifaces).forEach(function(ifname) {
+    ifaces[ifname].forEach(function(iface) {
       if ('IPv4' !== iface.family || iface.internal !== false) {
         // skip over internal (i.e. 127.0.0.1) and non-ipv4 addresses
         return;
@@ -37,18 +41,14 @@ function getLocalIpAddress() {
   return ips;
 }
 
-const getAvaliableAdress = host => {
-  const address = [host];
-  if (!['0.0.0.0', 'localhost', '127.0.0.1'].indexOf(host)) {
-    return ['localhost'].concat(getLocalIpAddress());
-  }
-};
-
 const error = (err, req, res, next) => {
   const softTab = '&#32;&#32;&#32;&#32;';
   let errTrace = '';
   if (process.env.NODE_ENV === 'development') {
-    errTrace = `:<br><br><pre style="color:red">${softTab}${err.stack.replace(/\n/g, `<br>${softTab}`)}</pre>`;
+    errTrace = `:<br><br><pre style="color:red">${softTab}${err.stack.replace(
+      /\n/g,
+      `<br>${softTab}`
+    )}</pre>`;
     console.log(err);
   }
   res.status(500).send(`Server Error${errTrace}`);
@@ -60,33 +60,60 @@ app.set('view engine', 'pug');
 app.set('views', viewPath);
 
 const filedServerMiddelWare = filedServer({
-  dir,
+  base,
   dirProcesser: (req, res, next, dir) => {
     dir.children.sort((l, r) => l.name.localeCompare(r.name));
     res.render('page/file-list', { dir });
-  }
+  },
 });
 
 app.use('/', (req, res, next) => {
   if (req.query.help !== undefined) {
     res.render('page/usage');
   } else {
-    filedServerMiddelWare(req, res, next);
+    next();
   }
 });
 
+if (isFileMode) {
+  app.use('/', (req, res, next) => {
+    if (req.query.file !== undefined) {
+      filedServerMiddelWare(req, res, next);
+    } else {
+      res.render('page/file');
+    }
+  });
+} else {
+  app.use('/', filedServerMiddelWare);
+}
+
 app.use(error);
 
-app.listen(port, host, (error) => {
+app.listen(port, host, error => {
   if (error) {
     throw error;
   }
 
-  console.log(colors.yellow('app is running on:'));
-  getAvaliableAdress(host).forEach(host => {
-    console.log(colors.green(`  http://${host}:${port}`));
+  console.log(
+    colors.yellow(
+      'Make sure that your device is connected to the same WiFi network as this computer.'
+    )
+  );
+  console.log(colors.cyan('Scan the following QR:'));
+  console.log('\n');
+  getLocalIpAddress().forEach(ip => {
+    const url = `http://${ip}:${port}`;
+    qrcode.toString(url, (err, qrcode) => {
+      if (err) {
+        throw err;
+      }
+  
+      console.log(url);
+      console.log(qrcode);
+    });
   });
-  console.log(colors.yellow('looking for help?:'));
-    console.log(colors.green(`  http://${host}:${port}?help`));
+  console.log(colors.cyan('looking for help?:'));
+  console.log(colors.green(`  http://localhost:${port}?help`));
+  console.log('\n');
   console.log('Hit CTRL-C to stop the server');
 });

@@ -1,0 +1,42 @@
+extends ../layout.pug
+
+block append style
+  style.
+    body, html {
+      height: 100%;
+    }
+    
+    .container {
+      position: absolute;
+      top: 20%;
+      left: 0;
+      right: 0;
+      margin: 0 auto;
+      width: 100%;
+      max-width: 768px;
+    }
+
+    .buttonContainer {
+      text-align: center;
+    }
+
+    .button {
+      font-size: 2em;
+    }
+
+    .button + .button {
+      margin-left: 1em;
+    }
+  
+    .viewRaw {
+      margin-top: 1em;
+      text-align: right;
+    }
+
+block content
+  div.container
+    div.buttonContainer
+      button.button.-regular(onclick='location.href = "?file"') Preview
+      button.button.-dark(onclick='location.href = "?file&format=file"') Download
+    div.viewRaw
+      a(href='?file&format=raw') View Raw Content
