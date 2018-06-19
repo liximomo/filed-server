@@ -2,11 +2,15 @@
 
 const fs = require('fs');
 const path = require('path');
-const Express = require('express');
+const url = require('url');
 const program = require('commander');
+const Express = require('express');
+const ecstatic = require('ecstatic');
 const qrcode = require('qrcode');
-const colors = require('colors');
+const chalk = require('chalk');
+const address = require('address');
 const filedServer = require('../index');
+const openBrowser = require('../lib/openBrowser');
 const package = require('../package.json');
 
 const viewPath = path.join(__dirname, '../views');
@@ -16,8 +20,10 @@ program
   .version(package.version)
   .option('-p, --port', 'listening port', parseInt)
   .option('-h, --host', 'host address')
+  .option('-o, --open', 'open browser')
   .parse(process.argv);
 
+const isInteractive = process.stdout.isTTY;
 const port = program.port || 8060;
 const host = program.host || '0.0.0.0';
 const fspath = program.args[0];
@@ -25,21 +31,59 @@ const fspath = program.args[0];
 const base = path.isAbsolute(fspath) ? fspath : path.join(process.cwd(), fspath);
 const isFileMode = !fs.statSync(base).isDirectory();
 
-function getLocalIpAddress() {
-  const os = require('os');
-  const ifaces = os.networkInterfaces();
-  const ips = [];
-  Object.keys(ifaces).forEach(function(ifname) {
-    ifaces[ifname].forEach(function(iface) {
-      if ('IPv4' !== iface.family || iface.internal !== false) {
-        // skip over internal (i.e. 127.0.0.1) and non-ipv4 addresses
-        return;
-      }
-      ips.push(iface.address);
-    });
-  });
-  return ips;
+function clearConsole() {
+  process.stdout.write(process.platform === 'win32' ? '\x1B[2J\x1B[0f' : '\x1B[2J\x1B[3J\x1B[H');
 }
+
+function prepareUrls(protocol, host, port) {
+  const formatUrl = hostname =>
+    url.format({
+      protocol,
+      hostname,
+      port,
+    });
+  const prettyPrintUrl = hostname =>
+    url.format({
+      protocol,
+      hostname,
+      port: chalk.bold(port),
+    });
+
+  const isUnspecifiedHost = host === '0.0.0.0' || host === '::';
+  let prettyHost, lanUrlForBrowser, lanUrlForTerminal;
+  if (isUnspecifiedHost) {
+    prettyHost = 'localhost';
+    try {
+      // This can only return an IPv4 address
+      lanUrlForBrowser = address.ip();
+      if (lanUrlForBrowser) {
+        // Check if the address is a private ip
+        // https://en.wikipedia.org/wiki/Private_network#Private_IPv4_address_spaces
+        if (/^10[.]|^172[.](1[6-9]|2[0-9]|3[0-1])[.]|^192[.]168[.]/.test(lanUrlForBrowser)) {
+          // Address is private, format it for later use
+          lanUrlForTerminal = prettyPrintUrl(lanUrlForBrowser);
+        } else {
+          // Address is not private, so we will discard it
+          lanUrlForBrowser = undefined;
+        }
+      }
+    } catch (_e) {
+      // ignored
+    }
+  } else {
+    prettyHost = host;
+  }
+  const localUrlForTerminal = prettyPrintUrl(prettyHost);
+  const localUrlForBrowser = formatUrl(prettyHost);
+  return {
+    lanUrlForBrowser,
+    lanUrlForTerminal,
+    localUrlForTerminal,
+    localUrlForBrowser,
+  };
+}
+
+const urls = prepareUrls('http', host, port);
 
 const error = (err, req, res, next) => {
   const softTab = '&#32;&#32;&#32;&#32;';
@@ -87,6 +131,19 @@ if (isFileMode) {
   app.use('/', filedServerMiddelWare);
 }
 
+// serve static
+app.use(
+  ecstatic({
+    root: base,
+    showdir: false,
+    showDotfiles: false,
+    cache: false,
+    autoIndex: false,
+    defaultExt: false,
+    handleError: false,
+  })
+);
+
 app.use(error);
 
 app.listen(port, host, error => {
@@ -94,26 +151,33 @@ app.listen(port, host, error => {
     throw error;
   }
 
+  if (isInteractive) {
+    clearConsole();
+  }
+
   console.log(
-    colors.yellow(
+    chalk.yellow(
       'Make sure that your device is connected to the same WiFi network as this computer.'
     )
   );
-  console.log(colors.cyan('Scan the following QR:'));
-  console.log('\n');
-  getLocalIpAddress().forEach(ip => {
-    const url = `http://${ip}:${port}`;
-    qrcode.toString(url, (err, qrcode) => {
-      if (err) {
-        throw err;
-      }
-  
-      console.log(url);
-      console.log(qrcode);
-    });
+  console.log(chalk.cyan('Scan the following QR:'));
+  const url = urls.lanUrlForTerminal ? urls.lanUrlForTerminal : urls.localUrlForTerminal;
+  qrcode.toString(url, (err, qrcode) => {
+    if (err) {
+      throw err;
+    }
+
+    console.log(qrcode);
   });
-  console.log(colors.cyan('looking for help?:'));
-  console.log(colors.green(`  http://localhost:${port}?help`));
+
+  console.log(chalk.cyan('Open in browser:'));
+  console.log(chalk.green(`  ${url}`));
+  console.log(chalk.cyan('Looking for help?:'));
+  console.log(chalk.green(`  ${url}?help`));
   console.log('\n');
   console.log('Hit CTRL-C to stop the server');
 });
+
+if (program.open) {
+  openBrowser(urls.localUrlForBrowser);
+}
